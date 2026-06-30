@@ -47,8 +47,7 @@ C'est défendable, sûr, et conforme à la mission ("valider l'intégrité de l'
 
 ## 2e IA — assistant médical (`ollama_server/Modelfile.medical`)
 
-Mission expérimentale du Brief : un **second modèle `phi35-medical`** (base + system prompt médical
-+ disclaimers). `start.ps1` le crée en même temps que le financier. Pour brancher le vrai modèle
+Mission expérimentale du Brief : un **second modèle `phi35-medical`** (base + system prompt médical + disclaimers). `start.ps1` le crée en même temps que le financier. Pour brancher le vrai modèle
 fine-tuné de la filière IA (LoRA → GGUF), remplacer la ligne `FROM` du `Modelfile.medical`.
 
 ## 🚀 Démarrage (une commande)
