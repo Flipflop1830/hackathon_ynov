@@ -1,0 +1,11 @@
+node_modules
+.next
+.git
+.gitignore
+*.db
+*.db-journal
+.env*
+deploy
+**/*.test.ts
+**/*.test.tsx
+README.md

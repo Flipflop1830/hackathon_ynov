@@ -1,0 +1,64 @@
+name: techcorp-ai
+
+services:
+  # ── Back AI : serveur d'inférence Ollama ──────────────────────────────────
+  ollama:
+    image: ollama/ollama:latest
+    volumes:
+      - ollama-models:/root/.ollama
+    # ports: ["11434:11434"]   # décommenter pour debug depuis l'hôte
+    healthcheck:
+      test: ["CMD-SHELL", "ollama list >/dev/null 2>&1 || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    restart: unless-stopped
+    # GPU (optionnel) — décommenter si runtime NVIDIA dispo :
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices: [{ driver: nvidia, count: all, capabilities: [gpu] }]
+
+  # ── Init : crée le modèle phi35-financial depuis le Modelfile, puis sort ──
+  ollama-init:
+    image: ollama/ollama:latest
+    depends_on:
+      ollama:
+        condition: service_healthy
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+    entrypoint: ["/bin/sh", "-c"]
+    command: >
+      "ollama pull phi3.5 &&
+       ollama create phi35-financial -f /Modelfile &&
+       echo '✅ Modèle phi35-financial prêt'"
+    volumes:
+      - ./Modelfile:/Modelfile:ro
+    restart: "no"
+
+  # ── Front : application Next.js ───────────────────────────────────────────
+  web:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    image: techcorp-devweb:latest
+    depends_on:
+      ollama-init:
+        condition: service_completed_successfully
+    environment:
+      - NODE_ENV=production
+      - INFERENCE_BACKEND=ollama
+      - OLLAMA_URL=http://ollama:11434
+      - OLLAMA_MODEL_FINANCE=phi35-financial
+      - OLLAMA_MODEL_MEDICAL=phi3.5
+      - DATABASE_URL=file:/data/dev.db
+      - AUTH_SECRET=${AUTH_SECRET:?Renseigne AUTH_SECRET (deploy.ps1 le génère dans deploy/.env)}
+    volumes:
+      - web-data:/data
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+
+volumes:
+  ollama-models:
+  web-data:
