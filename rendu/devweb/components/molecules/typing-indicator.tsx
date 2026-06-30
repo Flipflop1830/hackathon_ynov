@@ -28,6 +28,21 @@ const WORDS = [
   "Décantation",
   "Marmonnage",
   "Infusion",
+  "Tergiversation",
+  "Bricolage",
+  "Spéléologie",
+  "Bouillonnement",
+  "Carburation",
+  "Ratiocination",
+  "Tâtonnement",
+  "Maturation",
+  "Trifouillage",
+  "Patouillage",
+  "Tournicotage",
+  "Pédalage",
+  "Vrombissement",
+  "Mouture",
+  "Tambourinage",
 ];
 
 function randomWord(exclude?: string): string {
