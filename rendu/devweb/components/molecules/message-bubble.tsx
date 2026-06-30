@@ -5,15 +5,25 @@ import { Bot, User } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import type { ChatRole } from "@/lib/types";
+import { StreamingText } from "./streaming-text";
+import { MarkdownMessage } from "./markdown-message";
 
-export function MessageBubble({ role, content }: { role: ChatRole; content: string }) {
+export function MessageBubble({
+  role,
+  content,
+  streaming,
+}: {
+  role: ChatRole;
+  content: string;
+  streaming?: boolean;
+}) {
   const isUser = role === "user";
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 8 }}
+      initial={{ opacity: 0, y: 4 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.25, ease: "easeOut" }}
+      transition={{ duration: 0.35, ease: "easeOut" }}
       className={cn("flex w-full gap-3", isUser ? "flex-row-reverse" : "flex-row")}
     >
       <div
@@ -26,13 +36,19 @@ export function MessageBubble({ role, content }: { role: ChatRole; content: stri
       </div>
       <div
         className={cn(
-          "max-w-[80%] whitespace-pre-wrap rounded-2xl px-4 py-2.5 text-sm leading-relaxed",
+          "max-w-[80%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed",
           isUser
             ? "rounded-tr-sm bg-emerald-600 text-white"
             : "rounded-tl-sm bg-zinc-800 text-zinc-100",
         )}
       >
-        {content || "…"}
+        {isUser ? (
+          <span className="whitespace-pre-wrap">{content}</span>
+        ) : streaming ? (
+          <StreamingText content={content} />
+        ) : (
+          <MarkdownMessage content={content} />
+        )}
       </div>
     </motion.div>
   );

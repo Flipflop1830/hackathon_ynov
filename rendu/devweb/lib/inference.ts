@@ -71,13 +71,21 @@ async function startOllama(messages: ChatMessage[], model: string): Promise<Asyn
 
 // ── Triton : /v2/models/.../infer (réponse complète) + streaming simulé ───────
 async function startTriton(messages: ChatMessage[]): Promise<AsyncIterable<string>> {
-  const prompt = formatPhi3Prompt(messages);
+  // Le model.py Triton fourni utilise max_length=512 SANS support de l'historique :
+  // avec un prompt multi-tours, le modèle part en roue libre et génère jusqu'à 512
+  // tokens (très lent → timeout). On n'envoie donc que system + la dernière question.
+  // (Le backend Ollama, lui, gère l'historique complet.)
+  const system = messages.filter((m) => m.role === "system");
+  const lastUser = [...messages].reverse().find((m) => m.role === "user");
+  const prompt = formatPhi3Prompt([...system, ...(lastUser ? [lastUser] : [])]);
+
   const res = await fetch(`${TRITON_URL}/v2/models/${TRITON_MODEL}/infer`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       inputs: [{ name: "text_input", shape: [1], datatype: "BYTES", data: [prompt] }],
     }),
+    signal: AbortSignal.timeout(90_000), // garde-fou : échoue proprement si Triton bloque
   });
   if (!res.ok) throw new Error("Triton indisponible");
 

@@ -51,7 +51,12 @@ export function ChatWindow({
           )}
 
           {visible.map((m, i) => (
-            <MessageBubble key={i} role={m.role} content={m.content} />
+            <MessageBubble
+              key={i}
+              role={m.role}
+              content={m.content}
+              streaming={streaming && !showTyping && i === visible.length - 1 && m.role === "assistant"}
+            />
           ))}
           {showTyping && <TypingIndicator />}
           <div ref={bottomRef} />
