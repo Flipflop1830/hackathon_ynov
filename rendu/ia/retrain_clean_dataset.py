@@ -106,8 +106,9 @@ def setup_model():
     model = AutoModelForCausalLM.from_pretrained(BASE_MODEL, **model_kwargs)
 
     if quant_config:
-        # gradient checkpointing OFF → plus rapide (plus gourmand en VRAM)
-        model = prepare_model_for_kbit_training(model, use_gradient_checkpointing=False)
+        # gradient checkpointing ON : indispensable pour tenir dans 8 Go de VRAM.
+        # Sans lui, la mémoire déborde sur la RAM système (5-10x plus lent).
+        model = prepare_model_for_kbit_training(model, use_gradient_checkpointing=True)
 
     if not quant_config and torch.cuda.is_available():
         model = model.cuda()
@@ -150,8 +151,8 @@ def entrainer(tokenizer, model, dataset):
     args = TrainingArguments(
         output_dir=output_abs,
         num_train_epochs=1,
-        per_device_train_batch_size=4,
-        gradient_accumulation_steps=2,
+        per_device_train_batch_size=2,
+        gradient_accumulation_steps=4,
         learning_rate=2e-4,
         lr_scheduler_type="cosine",
         warmup_ratio=0.05,
@@ -162,7 +163,7 @@ def entrainer(tokenizer, model, dataset):
         save_total_limit=3,    # garde les 3 derniers
         remove_unused_columns=False,
         dataloader_drop_last=True,
-        dataloader_num_workers=4,      # prépare les batches en parallèle
+        dataloader_num_workers=0,      # 0 sous Windows (le multiprocess ajoute de l'overhead)
         use_cpu=not torch.cuda.is_available(),
         report_to="none",
     )
