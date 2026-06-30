@@ -29,7 +29,7 @@ réintroduirait la backdoor.
 ➡️ **Décision INFRA + CYBER : on déploie le modèle de base sain + un system prompt financier durci.**
 C'est défendable, sûr, et conforme à la mission ("valider l'intégrité de l'héritage avant de déployer").
 
-## Paramètres d'inférence (`ollama_server/Modelfile`)
+## Paramètres d'inférence (`ollama_server/Modelfile.financial`)
 
 | Paramètre | Valeur | Justification |
 |---|---|---|
@@ -61,7 +61,7 @@ fine-tuné de la filière IA (LoRA → GGUF), remplacer la ligne `FROM` du `Mode
 Le script :
 1. ajoute Ollama au PATH ;
 2. récupère `phi3.5` si absent ;
-3. (re)crée le modèle `phi35-financial` depuis le Modelfile ;
+3. (re)crée les modèles `phi35-financial` et `phi35-medical` depuis leurs Modelfiles ;
 4. vérifie que l'API répond sur `http://localhost:11434`.
 
 ## Rendre le serveur accessible aux DEV WEB

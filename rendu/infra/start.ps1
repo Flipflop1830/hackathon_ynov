@@ -17,7 +17,7 @@ if (-not (ollama list | Select-String -SimpleMatch "phi3.5")) {
 }
 
 # 3. (Re)créer les 2 modèles depuis leurs Modelfiles
-$modelfile = Join-Path $PSScriptRoot "..\..\ollama_server\Modelfile"
+$modelfile = Join-Path $PSScriptRoot "..\..\ollama_server\Modelfile.financial"
 $modelfileMed = Join-Path $PSScriptRoot "..\..\ollama_server\Modelfile.medical"
 Write-Host "==> Création du modèle 'phi35-financial' depuis $modelfile"
 ollama create phi35-financial -f $modelfile

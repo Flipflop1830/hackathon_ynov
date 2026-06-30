@@ -16,7 +16,7 @@ host :3000 ─┤  web (Next.js)  ──HTTP──►  ollama (phi35-financial) 
 | Service | Rôle |
 |---|---|
 | `ollama` | Serveur d'inférence (back AI), modèles persistés dans un volume |
-| `ollama-init` | Pull `phi3.5` + `ollama create phi35-financial` depuis `Modelfile`, puis s'arrête |
+| `ollama-init` | Pull `phi3.5` + crée `phi35-financial` et `phi35-medical` (depuis `Modelfile.financial`/`Modelfile.medical`), puis s'arrête |
 | `web` | App Next.js (build multi-étapes), migrations Prisma au démarrage, SQLite dans un volume |
 
 Le front est câblé sur Ollama (`INFERENCE_BACKEND=ollama`, `OLLAMA_URL=http://ollama:11434`).
