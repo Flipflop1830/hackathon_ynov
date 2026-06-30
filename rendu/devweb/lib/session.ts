@@ -16,7 +16,9 @@ export async function createSession(userId: string, accountType: AccountType): P
   const cookieStore = await cookies();
   cookieStore.set(COOKIE_NAME, token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production", // localhost = http en dev
+    // On sert en HTTP sur le LAN → cookie NON Secure par défaut (sinon il est
+    // rejeté hors localhost). Mettre COOKIE_SECURE=true uniquement derrière HTTPS.
+    secure: process.env.COOKIE_SECURE === "true",
     expires: expiresAt,
     sameSite: "lax",
     path: "/",
