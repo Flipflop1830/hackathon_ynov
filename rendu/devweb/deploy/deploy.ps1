@@ -23,6 +23,29 @@ function Ensure-EnvFile {
     }
 }
 
+# Ouvre le port 3000 dans le pare-feu pour que le GROUPE accède au front (admin requis).
+function Ensure-FirewallRule {
+    try {
+        if (-not (Get-NetFirewallRule -DisplayName "TechCorp web 3000" -ErrorAction SilentlyContinue)) {
+            New-NetFirewallRule -DisplayName "TechCorp web 3000" -Direction Inbound `
+                -LocalPort 3000 -Protocol TCP -Action Allow -ErrorAction Stop | Out-Null
+            Write-Host "==> Pare-feu : port 3000 ouvert (accès groupe)"
+        }
+    } catch {
+        Write-Warning "Pare-feu non configuré (lancez en PowerShell ADMIN pour ouvrir le port 3000 au groupe)."
+    }
+}
+
+# Adresse IPv4 LAN (best-effort) pour partager l'URL au groupe.
+function Get-LanIP {
+    $ip = Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue |
+        Where-Object {
+            $_.IPAddress -notlike "127.*" -and $_.IPAddress -notlike "169.254.*" -and
+            $_.PrefixOrigin -ne "WellKnown" -and $_.InterfaceAlias -notmatch "vEthernet|WSL|Loopback"
+        } | Select-Object -First 1
+    if ($ip) { return $ip.IPAddress } else { return $null }
+}
+
 switch ($Action) {
     "down" {
         docker compose down
@@ -34,11 +57,13 @@ switch ($Action) {
     }
     "rebuild" {
         Ensure-EnvFile
+        Ensure-FirewallRule
         docker compose build --no-cache
         docker compose up -d
     }
     "up" {
         Ensure-EnvFile
+        Ensure-FirewallRule
         Write-Host "==> Build + démarrage (1er run : téléchargement de phi3.5 ~2.2 Go, soyez patient)…"
         docker compose up --build -d
     }
@@ -56,7 +81,12 @@ for ($i = 0; $i -lt 90; $i++) {
 }
 
 if ($ready) {
-    Write-Host "✅ Application prête : http://localhost:3000"
+    Write-Host "✅ Application prête !"
+    Write-Host "   Local  : http://localhost:3000"
+    $lan = Get-LanIP
+    if ($lan) {
+        Write-Host "   Groupe : http://${lan}:3000   <-- à partager (même réseau Wi-Fi)"
+    }
     Write-Host "   (créez un compte finance ou médical, puis chattez)"
 } else {
     Write-Warning "Pas encore prêt après ~15 min. Vérifiez : docker compose logs -f"

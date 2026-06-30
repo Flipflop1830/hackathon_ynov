@@ -38,6 +38,16 @@ Autres commandes :
 ./deploy.ps1 rebuild    # rebuild complet (sans cache)
 ```
 
+## Accès pour tout le groupe
+
+- Le service **web** est publié sur `0.0.0.0:3000` (clé `ports` du compose) → joignable depuis
+  les autres PC du même réseau à **`http://<IP-de-cette-machine>:3000`**.
+- `deploy.ps1` ouvre le port **3000** dans le pare-feu Windows (lancez-le en **PowerShell admin**,
+  sinon il prévient) et affiche l'URL réseau à partager.
+- Le service **ollama** n'est **pas** publié (port interne) : c'est voulu. Le groupe utilise le
+  **web**, qui parle à Ollama via le réseau Docker interne — le modèle n'a pas à être exposé.
+  (Pour déboguer Ollama depuis l'hôte, décommentez `ports: ["11434:11434"]`.)
+
 ## Configuration
 
 `deploy.ps1` génère `deploy/.env` (avec un `AUTH_SECRET` aléatoire) au premier run.
