@@ -162,7 +162,6 @@ def entrainer(tokenizer, model, dataset):
         save_total_limit=3,    # garde les 3 derniers
         remove_unused_columns=False,
         dataloader_drop_last=True,
-        group_by_length=True,          # regroupe les exemples de longueur proche
         dataloader_num_workers=4,      # prépare les batches en parallèle
         use_cpu=not torch.cuda.is_available(),
         report_to="none",
