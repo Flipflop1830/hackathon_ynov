@@ -31,9 +31,11 @@ services:
     command: >
       "ollama pull phi3.5 &&
        ollama create phi35-financial -f /Modelfile &&
-       echo '✅ Modèle phi35-financial prêt'"
+       ollama create phi35-medical -f /Modelfile.medical &&
+       echo '✅ Modèles phi35-financial + phi35-medical prêts'"
     volumes:
       - ./Modelfile:/Modelfile:ro
+      - ./Modelfile.medical:/Modelfile.medical:ro
     restart: "no"
 
   # ── Front : application Next.js ───────────────────────────────────────────
@@ -50,7 +52,7 @@ services:
       - INFERENCE_BACKEND=ollama
       - OLLAMA_URL=http://ollama:11434
       - OLLAMA_MODEL_FINANCE=phi35-financial
-      - OLLAMA_MODEL_MEDICAL=phi3.5
+      - OLLAMA_MODEL_MEDICAL=phi35-medical
       - DATABASE_URL=file:/data/dev.db
       - AUTH_SECRET=${AUTH_SECRET:?Renseigne AUTH_SECRET (deploy.ps1 le génère dans deploy/.env)}
     volumes:

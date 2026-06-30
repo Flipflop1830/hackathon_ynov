@@ -59,11 +59,11 @@ Pour Triton (non-streaming) : on construit un prompt au format chat **Phi-3**, o
 
 ### Routage finance / médical
 
-`lib/assistants.ts` choisit modèle + system prompt selon le `accountType` du compte :
-- **finance** → modèle `phi35-financial` (déployé par l'INFRA) ;
-- **médical** → modèle provisoire `phi3.5` + system prompt médical + disclaimer.
-  *Le vrai modèle médical fine-tuné (mission IA) reste expérimental ; le brancher = changer
-  `OLLAMA_MODEL_MEDICAL` dans `.env.local`.*
+`lib/assistants.ts` choisit le **modèle** + system prompt selon le `accountType` — **2 IA distinctes** :
+- **finance** → `phi35-financial` (production) ;
+- **médical** → `phi35-medical` (2e modèle dédié, expérimental — base + prompt médical + disclaimers).
+  *Pour le vrai modèle fine-tuné de la filière IA (LoRA → GGUF) : remplacer le `FROM` de
+  `ollama_server/Modelfile.medical`. Le déploiement Docker crée déjà les 2 modèles.*
 
 ## 🚀 Lancement (une commande)
 
