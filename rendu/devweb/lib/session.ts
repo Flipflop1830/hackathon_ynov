@@ -27,7 +27,16 @@ export async function createSession(userId: string, accountType: AccountType): P
 
 export async function deleteSession(): Promise<void> {
   const cookieStore = await cookies();
-  cookieStore.delete(COOKIE_NAME);
+  // Réécrit un cookie expiré avec les MÊMES attributs que createSession → purge
+  // fiable (un simple del() peut échouer si path/secure ne correspondent pas).
+  cookieStore.set(COOKIE_NAME, "", {
+    httpOnly: true,
+    secure: process.env.COOKIE_SECURE === "true",
+    expires: new Date(0),
+    maxAge: 0,
+    sameSite: "lax",
+    path: "/",
+  });
 }
 
 export async function getSession(): Promise<SessionPayload | null> {
