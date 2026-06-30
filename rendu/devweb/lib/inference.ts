@@ -85,7 +85,8 @@ async function startTriton(messages: ChatMessage[]): Promise<AsyncIterable<strin
     body: JSON.stringify({
       inputs: [{ name: "text_input", shape: [1], datatype: "BYTES", data: [prompt] }],
     }),
-    signal: AbortSignal.timeout(90_000), // garde-fou : échoue proprement si Triton bloque
+    // Triton est partagé (1 instance GPU) → marge confortable sous charge.
+    signal: AbortSignal.timeout(150_000),
   });
   if (!res.ok) throw new Error("Triton indisponible");
 

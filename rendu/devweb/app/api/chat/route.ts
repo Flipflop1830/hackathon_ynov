@@ -59,8 +59,14 @@ export async function POST(req: Request) {
   let source: AsyncIterable<string>;
   try {
     source = await startChat(messages, assistant.kind);
-  } catch {
-    return new Response("Serveur d'inférence injoignable", { status: 502 });
+  } catch (err) {
+    console.error("[chat] startChat a échoué:", err);
+    const timedOut =
+      err instanceof Error && (err.name === "TimeoutError" || err.name === "AbortError");
+    const message = timedOut
+      ? "Le serveur d'inférence est occupé (délai dépassé). Réessayez."
+      : "Serveur d'inférence injoignable.";
+    return new Response(message, { status: 502 });
   }
 
   const convId = conversation.id;

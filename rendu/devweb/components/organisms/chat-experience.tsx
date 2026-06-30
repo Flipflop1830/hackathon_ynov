@@ -113,7 +113,8 @@ export function ChatExperience({
         });
 
         if (!res.ok || !res.body) {
-          throw new Error(res.status === 502 ? "Serveur d'inférence injoignable." : "Erreur serveur.");
+          const text = await res.text().catch(() => "");
+          throw new Error(text || "Erreur serveur.");
         }
 
         // Réconcilie l'id temporaire avec l'id réel renvoyé par le serveur.
