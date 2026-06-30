@@ -30,11 +30,11 @@ services:
     entrypoint: ["/bin/sh", "-c"]
     command: >
       "ollama pull phi3.5 &&
-       ollama create phi35-financial -f /Modelfile &&
+       ollama create phi35-financial -f /Modelfile.financial &&
        ollama create phi35-medical -f /Modelfile.medical &&
        echo '✅ Modèles phi35-financial + phi35-medical prêts'"
     volumes:
-      - ./Modelfile:/Modelfile:ro
+      - ./Modelfile.financial:/Modelfile.financial:ro
       - ./Modelfile.medical:/Modelfile.medical:ro
     restart: "no"
 
