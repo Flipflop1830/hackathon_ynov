@@ -40,15 +40,22 @@ Le **chat** passe par un *route handler* côté serveur (`lib/inference.ts`) qui
 d'inférence, relaie les deltas au client **et** persiste la conversation. Aucun appel direct
 navigateur → modèle (pas de souci CORS).
 
-### Backend d'inférence (Ollama **ou** Triton)
+### Backend d'inférence (Ollama **et** Triton — les deux opérationnels)
 
-Sélectionnable via `INFERENCE_BACKEND` :
-- **`ollama`** → `POST {OLLAMA_URL}/api/chat` en streaming NDJSON (vrai streaming token par token).
-- **`triton`** → `POST {TRITON_URL}/v2/models/{TRITON_MODEL}/infer` (API v2, réponse complète) : on
-  construit un prompt au format chat **Phi-3**, on extrait la réponse (Triton ré-échoe le prompt),
-  puis on **simule le streaming mot à mot** côté serveur. Health = `GET /v2/health/ready`.
+L'INFRA expose **les deux** serveurs du Brief, tous deux fonctionnels ; le front cible l'un ou
+l'autre via `INFERENCE_BACKEND` (aucune autre modif) :
 
-> Le serveur du groupe est un **Triton** (`http://10.82.119.69:8000`, modèle `phi35_financial`).
+| Backend | Endpoint (Brief) | Appel |
+|---|---|---|
+| **`ollama`** | `http://localhost:11434` | `POST /api/chat` streaming NDJSON (vrai streaming token par token) |
+| **`triton`** | `http://localhost:8000` | `POST /v2/models/{TRITON_MODEL}/infer` (API v2, réponse complète) |
+
+Pour Triton (non-streaming) : on construit un prompt au format chat **Phi-3**, on extrait la réponse
+(Triton ré-échoe le prompt), puis on **simule le streaming mot à mot** côté serveur. Health =
+`GET /v2/health/ready` ; pour Ollama, `GET /api/tags`.
+
+> En réseau, viser la machine INFRA : `OLLAMA_URL=http://<IP-INFRA>:11434` ou
+> `TRITON_URL=http://<IP-INFRA>:8000` dans `.env.local`.
 
 ### Routage finance / médical
 

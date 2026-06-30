@@ -1,15 +1,23 @@
-# 🏗️ INFRA — Déploiement de l'assistant financier (Ollama)
+# 🏗️ INFRA — Déploiement de l'assistant financier
 
 Serveur d'inférence pour l'assistant financier de TechCorp Industries.
 
-## Choix technique
+Le Brief laisse le choix du serveur (Ollama / Triton / maison). **Le groupe expose les DEUX,
+tous deux opérationnels** : les DEV WEB peuvent cibler l'un ou l'autre.
+
+| Serveur | Endpoint | Modèle servi | Doc |
+|---|---|---|---|
+| **Ollama** (clé en main) | `http://localhost:11434` | `phi35-financial` | ce fichier |
+| **Triton** (avancé, Docker/GPU) | `http://localhost:8000` | `phi35_financial` | [README-triton.md](README-triton.md) |
+
+## Choix technique (Ollama)
 
 | Critère | Décision |
 |---|---|
 | Serveur d'inférence | **Ollama** (solution clé en main, recommandée par le brief) |
 | Modèle de base | `phi3.5` (Microsoft Phi-3.5-mini-instruct, quantisé Q4 par Ollama) |
 | Modèle servi | `phi35-financial` (base + system prompt financier) |
-| Endpoint | `http://localhost:11434` (API REST compatible OpenAI) |
+| Endpoint | `http://localhost:11434` |
 
 ### ⚠️ Pourquoi PAS l'adaptateur LoRA fourni ?
 
@@ -51,12 +59,17 @@ Le script :
 Par défaut Ollama n'écoute que sur `localhost`. Pour l'exposer au réseau du groupe :
 
 ```powershell
-# Variable d'environnement utilisateur, puis redémarrer le service Ollama
+# 1) Écouter sur toutes les interfaces, puis redémarrer Ollama
 setx OLLAMA_HOST "0.0.0.0:11434"
+
+# 2) Autoriser le port dans le pare-feu Windows (PowerShell ADMIN) — sinon les
+#    autres PC ne peuvent pas joindre le serveur
+New-NetFirewallRule -DisplayName "Ollama 11434" -Direction Inbound -LocalPort 11434 -Protocol TCP -Action Allow
 ```
 
 Les DEV WEB utilisent alors `http://<IP-de-cette-machine>:11434`.
 Trouver l'IP locale : `ipconfig` → champ « Adresse IPv4 ».
+(Pour Triton, exposer de même le port **8000** — voir [README-triton.md](README-triton.md).)
 
 ## Test rapide de l'API
 
