@@ -11,12 +11,14 @@ export type ConversationSummary = { id: string; title: string };
 export function ConversationSidebar({
   conversations,
   activeId,
+  streamingIds,
   onSelect,
   onNew,
   onDelete,
 }: {
   conversations: ConversationSummary[];
   activeId: string | null;
+  streamingIds?: Set<string>;
   onSelect: (id: string) => void;
   onNew: () => void;
   onDelete: (id: string) => void;
@@ -42,6 +44,7 @@ export function ConversationSidebar({
               <ConversationItem
                 title={c.title}
                 active={c.id === activeId}
+                streaming={streamingIds?.has(c.id) ?? false}
                 onSelect={() => onSelect(c.id)}
                 onDelete={() => onDelete(c.id)}
               />

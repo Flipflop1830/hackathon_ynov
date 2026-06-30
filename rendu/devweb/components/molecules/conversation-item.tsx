@@ -3,15 +3,18 @@
 import { MessageSquare, Trash2 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { StatusDot } from "@/components/atoms/status-dot";
 
 export function ConversationItem({
   title,
   active,
+  streaming,
   onSelect,
   onDelete,
 }: {
   title: string;
   active: boolean;
+  streaming?: boolean;
   onSelect: () => void;
   onDelete: () => void;
 }) {
@@ -23,7 +26,11 @@ export function ConversationItem({
       )}
     >
       <button onClick={onSelect} className="flex min-w-0 flex-1 items-center gap-2 text-left">
-        <MessageSquare className="h-4 w-4 shrink-0" />
+        {streaming ? (
+          <StatusDot state="online" className="shrink-0" />
+        ) : (
+          <MessageSquare className="h-4 w-4 shrink-0" />
+        )}
         <span className="truncate">{title}</span>
       </button>
       <button
