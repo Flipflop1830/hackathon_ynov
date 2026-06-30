@@ -36,9 +36,19 @@ proxy.ts                       # ex-middleware (Next 16) : redirections optimist
 prisma/schema.prisma           # User · Conversation · Message
 ```
 
-Le **chat** passe par un *route handler* côté serveur qui proxy `POST {OLLAMA_URL}/api/chat`
-(stream NDJSON), relaie les deltas au client **et** persiste la conversation. Aucun appel direct
-navigateur → Ollama (pas de souci CORS).
+Le **chat** passe par un *route handler* côté serveur (`lib/inference.ts`) qui appelle le backend
+d'inférence, relaie les deltas au client **et** persiste la conversation. Aucun appel direct
+navigateur → modèle (pas de souci CORS).
+
+### Backend d'inférence (Ollama **ou** Triton)
+
+Sélectionnable via `INFERENCE_BACKEND` :
+- **`ollama`** → `POST {OLLAMA_URL}/api/chat` en streaming NDJSON (vrai streaming token par token).
+- **`triton`** → `POST {TRITON_URL}/v2/models/{TRITON_MODEL}/infer` (API v2, réponse complète) : on
+  construit un prompt au format chat **Phi-3**, on extrait la réponse (Triton ré-échoe le prompt),
+  puis on **simule le streaming mot à mot** côté serveur. Health = `GET /v2/health/ready`.
+
+> Le serveur du groupe est un **Triton** (`http://10.82.119.69:8000`, modèle `phi35_financial`).
 
 ### Routage finance / médical
 
@@ -61,7 +71,13 @@ applique les migrations Prisma (crée `prisma/dev.db`) et démarre sur **http://
 ```
 DATABASE_URL="file:./dev.db"
 AUTH_SECRET="<généré>"
-OLLAMA_URL="http://localhost:11434"      # ou http://10.15.2.23:11434 depuis un autre PC
+
+INFERENCE_BACKEND="triton"               # "ollama" ou "triton"
+# Triton (serveur du groupe)
+TRITON_URL="http://10.82.119.69:8000"
+TRITON_MODEL="phi35_financial"
+# Ollama (si INFERENCE_BACKEND=ollama)
+OLLAMA_URL="http://localhost:11434"
 OLLAMA_MODEL_FINANCE="phi35-financial"
 OLLAMA_MODEL_MEDICAL="phi3.5"
 ```

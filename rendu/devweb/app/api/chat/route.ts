@@ -1,12 +1,7 @@
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { getAssistant } from "@/lib/assistants";
-import {
-  OLLAMA_URL,
-  parseOllamaChatLine,
-  type OllamaMessage,
-  type OllamaRole,
-} from "@/lib/ollama";
+import { startChat, type ChatMessage } from "@/lib/inference";
 
 export async function POST(req: Request) {
   const session = await getSession();
@@ -39,16 +34,13 @@ export async function POST(req: Request) {
 
   if (!conversation) {
     conversation = await prisma.conversation.create({
-      data: {
-        userId: session.userId,
-        title: content.slice(0, 60),
-      },
+      data: { userId: session.userId, title: content.slice(0, 60) },
       include: { messages: { orderBy: { createdAt: "asc" } } },
     });
   }
 
-  const history: OllamaMessage[] = conversation.messages.map((m) => ({
-    role: m.role as OllamaRole,
+  const history: ChatMessage[] = conversation.messages.map((m) => ({
+    role: m.role as ChatMessage["role"],
     content: m.content,
   }));
 
@@ -57,47 +49,32 @@ export async function POST(req: Request) {
     data: { conversationId: conversation.id, role: "user", content },
   });
 
-  const messages: OllamaMessage[] = [
+  const messages: ChatMessage[] = [
     { role: "system", content: assistant.systemPrompt },
     ...history,
     { role: "user", content },
   ];
 
-  let ollamaRes: Response;
+  // Le fetch initial est await ici → erreur de connexion = 502 propre.
+  let source: AsyncIterable<string>;
   try {
-    ollamaRes = await fetch(`${OLLAMA_URL}/api/chat`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ model: assistant.model, messages, stream: true }),
-    });
+    source = await startChat(messages, assistant.kind);
   } catch {
-    return new Response("Serveur Ollama injoignable", { status: 502 });
-  }
-
-  if (!ollamaRes.ok || !ollamaRes.body) {
-    return new Response("Erreur du serveur de modèle", { status: 502 });
+    return new Response("Serveur d'inférence injoignable", { status: 502 });
   }
 
   const convId = conversation.id;
-  const reader = ollamaRes.body.getReader();
-  const decoder = new TextDecoder();
   const encoder = new TextEncoder();
   let assistantText = "";
-  let buffer = "";
 
   const stream = new ReadableStream<Uint8Array>({
-    async pull(controller) {
-      const { done, value } = await reader.read();
-
-      if (done) {
-        if (buffer.trim()) {
-          const parsed = parseOllamaChatLine(buffer);
-          if (parsed?.content) {
-            assistantText += parsed.content;
-            controller.enqueue(encoder.encode(parsed.content));
-          }
+    async start(controller) {
+      try {
+        for await (const chunk of source) {
+          assistantText += chunk;
+          controller.enqueue(encoder.encode(chunk));
         }
-        // Persiste la réponse complète de l'assistant.
+      } finally {
         await prisma.message.create({
           data: { conversationId: convId, role: "assistant", content: assistantText },
         });
@@ -106,22 +83,7 @@ export async function POST(req: Request) {
           data: { updatedAt: new Date() },
         });
         controller.close();
-        return;
       }
-
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split("\n");
-      buffer = lines.pop() ?? "";
-      for (const line of lines) {
-        const parsed = parseOllamaChatLine(line);
-        if (parsed?.content) {
-          assistantText += parsed.content;
-          controller.enqueue(encoder.encode(parsed.content));
-        }
-      }
-    },
-    cancel() {
-      void reader.cancel();
     },
   });
 

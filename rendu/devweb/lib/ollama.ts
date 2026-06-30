@@ -1,5 +1,3 @@
-export const OLLAMA_URL = process.env.OLLAMA_URL ?? "http://localhost:11434";
-
 export type OllamaRole = "system" | "user" | "assistant";
 export type OllamaMessage = { role: OllamaRole; content: string };
 
@@ -18,26 +16,8 @@ export function parseOllamaChatLine(line: string): { content: string; done: bool
       error?: string;
     };
     if (obj.error) throw new Error(obj.error);
-    return {
-      content: obj.message?.content ?? "",
-      done: Boolean(obj.done),
-    };
+    return { content: obj.message?.content ?? "", done: Boolean(obj.done) };
   } catch {
     return null;
-  }
-}
-
-/** Vérifie qu'Ollama répond et liste les modèles disponibles. */
-export async function checkOllama(): Promise<{ connected: boolean; models: string[] }> {
-  try {
-    const res = await fetch(`${OLLAMA_URL}/api/tags`, {
-      cache: "no-store",
-      signal: AbortSignal.timeout(2500),
-    });
-    if (!res.ok) return { connected: false, models: [] };
-    const data = (await res.json()) as { models?: { name: string }[] };
-    return { connected: true, models: (data.models ?? []).map((m) => m.name) };
-  } catch {
-    return { connected: false, models: [] };
   }
 }

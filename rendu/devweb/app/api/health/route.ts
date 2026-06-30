@@ -1,10 +1,10 @@
-import { checkOllama, OLLAMA_URL } from "@/lib/ollama";
+import { checkInference } from "@/lib/inference";
 
-// Statut de connexion au serveur d'inférence Ollama (utilisé par le badge UI).
+// Statut de connexion au serveur d'inférence (utilisé par le badge UI).
 export async function GET() {
-  const { connected, models } = await checkOllama();
+  const { connected, backend } = await checkInference();
   return Response.json(
-    { connected, models, url: OLLAMA_URL },
+    { connected, backend },
     { headers: { "Cache-Control": "no-store" } },
   );
 }
