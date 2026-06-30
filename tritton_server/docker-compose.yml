@@ -1,0 +1,30 @@
+services:
+  triton:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: techcorp-triton:24.08
+    container_name: techcorp-triton
+    # GPU passthrough (runtime NVIDIA détecté sur la machine INFRA)
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    ports:
+      - "8000:8000"   # HTTP / REST  (utilisé par les DEV WEB)
+      - "8001:8001"   # gRPC
+      - "8002:8002"   # métriques Prometheus
+    volumes:
+      # Le model_repository est monté là où model.py attend son cache HF
+      - ../model_repository:/opt/tritonserver/model_repository
+    # Token optionnel uniquement si le modèle HF était privé (ici public)
+    environment:
+      - PRIVATE_REPO_TOKEN=${PRIVATE_REPO_TOKEN:-}
+    command: >
+      tritonserver
+      --model-repository=/opt/tritonserver/model_repository
+      --log-verbose=1
+    shm_size: "1g"
