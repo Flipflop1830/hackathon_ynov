@@ -43,7 +43,7 @@ export function ChatInput({
             submit();
           }
         }}
-        className="max-h-40 flex-1 resize-none bg-transparent px-2 py-1.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none"
+        className="max-h-40 min-h-9 flex-1 resize-none bg-transparent px-2 py-2 text-sm leading-5 text-zinc-100 placeholder:text-zinc-500 focus:outline-none"
       />
       <Button size="icon" onClick={submit} disabled={disabled || !value.trim()} aria-label="Envoyer">
         {disabled ? <Spinner /> : <SendHorizontal className="h-4 w-4" />}
