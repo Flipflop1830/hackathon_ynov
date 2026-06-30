@@ -1,0 +1,45 @@
+name: CI devweb
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Pas d'étape de déploiement (no deploy) — uniquement qualité : lint, types, tests, build.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: rendu/devweb
+    env:
+      DATABASE_URL: "file:./dev.db"
+      AUTH_SECRET: "ci-not-a-real-secret-change-me"
+      OLLAMA_URL: "http://localhost:11434"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: rendu/devweb/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Tests (Vitest)
+        run: npm run test
+
+      - name: Build
+        run: npm run build
