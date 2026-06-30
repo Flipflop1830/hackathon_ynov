@@ -4,25 +4,51 @@ import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Bot } from "lucide-react";
 
+// Clin d'œil aux "spinner verbs" de Claude Code, version française et ludique.
 const WORDS = [
-  "Réflexion",
-  "Analyse",
-  "Consultation du modèle",
-  "Calcul",
-  "Rédaction",
-  "Vérification",
+  "Cogitation",
+  "Gamberge",
+  "Mijotage",
+  "Élucubration",
+  "Tambouille",
+  "Bidouillage",
+  "Phosphorage",
+  "Rumination",
+  "Percolation",
+  "Gribouillage",
+  "Touillage",
+  "Vadrouille",
+  "Brassage",
+  "Tricotage",
+  "Pétrissage",
+  "Moulinage",
+  "Macération",
+  "Échafaudage",
+  "Jonglage",
+  "Décantation",
+  "Marmonnage",
+  "Infusion",
 ];
 
+function randomWord(exclude?: string): string {
+  let w = exclude;
+  while (w === exclude) w = WORDS[Math.floor(Math.random() * WORDS.length)];
+  return w as string;
+}
+
 export function TypingIndicator() {
-  const [i, setI] = useState(0);
+  // L'indicateur n'est monté que côté client (pendant le streaming) → l'initialiseur
+  // aléatoire ne pose pas de souci d'hydratation.
+  const [word, setWord] = useState(() => randomWord());
+  const [tick, setTick] = useState(0);
 
   useEffect(() => {
-    // Changement lent pour laisser le temps de lire.
-    const id = setInterval(() => setI((v) => (v + 1) % WORDS.length), 3200);
+    const id = setInterval(() => {
+      setWord((w) => randomWord(w));
+      setTick((t) => t + 1);
+    }, 3200);
     return () => clearInterval(id);
   }, []);
-
-  const word = WORDS[i];
 
   return (
     <div className="flex w-full gap-3">
@@ -42,7 +68,7 @@ export function TypingIndicator() {
         </div>
         <AnimatePresence mode="wait">
           <motion.span
-            key={i}
+            key={tick}
             exit={{ opacity: 0, transition: { duration: 0.3 } }}
             className="text-sm font-light tracking-wide text-zinc-500"
           >
