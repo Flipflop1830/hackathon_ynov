@@ -6,6 +6,30 @@ financier** — avec une mission expérimentale de fine-tuning médical.
 
 Ce dossier `rendu/` regroupe les livrables des **5 filières**.
 
+---
+
+## ⭐ Le livrable phare — l'application web (DEV WEB)
+
+L'**interface de chat** est le cœur du rendu : c'est elle qui rend l'assistant réellement utilisable.
+Une **app full-stack Next.js** moderne, connectée au serveur d'inférence. → [`devweb/`](devweb/)
+
+**Ce qu'elle fait :**
+- 💬 Chat en **streaming mot-à-mot** (effet machine à écrire) + rendu **markdown** des réponses.
+- 👤 **Comptes** (inscription / connexion), **historique** persistant par utilisateur, **chats simultanés**.
+- 🧭 **Deux assistants** selon le type de compte : **finance** ou **médical**.
+- 🟢 **État de connexion** au serveur en temps réel + indicateur de réflexion animé.
+- 🔄 Bascule **Ollama ↔ Triton** sans toucher au code (1 variable d'env).
+- 🐳 **Déploiement Docker** (front + IA) et accès **réseau** pour tout le groupe.
+
+**La lancer tout de suite (une commande, front + IA) :**
+```powershell
+cd devweb/deploy
+./deploy.ps1            # → http://localhost:3000
+```
+Stack technique & détails : [`devweb/README.md`](devweb/README.md) · déploiement : [`devweb/deploy/README.md`](devweb/deploy/README.md).
+
+---
+
 ## 🔴 Fil rouge — la backdoor
 
 L'équipe précédente avait **piégé** le projet (ce n'est pas un bug, c'est le cœur du challenge) :
@@ -75,10 +99,37 @@ avancé GPU**. L'app fonctionne avec l'un comme avec l'autre.
 
 ## 🚀 Démarrage rapide
 
-- **Serveur d'inférence (INFRA)** : `cd infra ; ./start.ps1` → crée `phi35-financial` + `phi35-medical`
-  sur Ollama (`http://localhost:11434`). Variante Triton : voir [`infra/README-triton.md`](infra/README-triton.md).
-- **Application web (DEV WEB)** : `cd devweb ; ./start.ps1` → `http://localhost:3000`.
-  Déploiement Docker tout-en-un (front + back) : `cd devweb/deploy ; ./deploy.ps1`.
+### ⭐ Recommandé — toute la stack en une commande (Docker)
+
+Front Next.js **+** back Ollama (modèles créés automatiquement), conteneurisés, données persistantes.
+
+```powershell
+cd devweb/deploy
+./deploy.ps1            # build + démarre tout, puis attend la disponibilité
+```
+
+Quand c'est prêt → **http://localhost:3000** (et **`http://<IP>:3000`** pour le groupe, même réseau).
+1. Crée un compte **finance** ou **médical**.
+2. Pose une question → réponse **streamée en français**.
+
+Autres commandes : `./deploy.ps1 down` (arrêt) · `logs` · `rebuild`.
+> Pré-requis : **Docker Desktop**. 1er lancement : téléchargement du modèle (~2,2 Go) + build → patienter.
+
+### 🧩 Mode développement (composants séparés)
+
+1. **INFRA — serveur d'inférence** (Ollama) :
+   ```powershell
+   cd infra ; ./start.ps1        # crée phi35-financial + phi35-medical sur :11434
+   ```
+   Alternative GPU/Docker : [`infra/README-triton.md`](infra/README-triton.md) (Triton `:8000`).
+2. **DEV WEB — l'application** (hot-reload) :
+   ```powershell
+   cd devweb ; ./start.ps1       # → http://localhost:3000
+   ```
+   Backend à choisir dans `devweb/.env.local` : `INFERENCE_BACKEND=ollama` (défaut) ou `triton`
+   (+ `OLLAMA_URL` / `TRITON_URL` pour viser la machine INFRA).
+
+> Pré-requis dev : **Node 18+** (web) et **Ollama** installé (infra).
 
 ## 🧠 Modèles & sécurité
 
