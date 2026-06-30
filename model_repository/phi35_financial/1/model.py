@@ -84,13 +84,20 @@ class TritonPythonModel:
         return responses
 
     def generate(self, prompt):
+        # max_new_tokens (et non max_length) : la longueur de SORTIE est indépendante
+        # de la longueur du prompt → plus de réponses coupées par un prompt long, et
+        # le modèle s'arrête sur EOS au lieu de générer jusqu'à un total fixe.
         sequences = self.pipeline(
             prompt,
             do_sample=True,
-            top_k=10,
+            temperature=0.3,
+            top_p=0.9,
+            top_k=40,
+            repetition_penalty=1.15,
             num_return_sequences=1,
             eos_token_id=self.tokenizer.eos_token_id,
-            max_length=self.max_output_length,
+            pad_token_id=self.tokenizer.eos_token_id,
+            max_new_tokens=self.max_output_length,
         )
 
         output_tensors = []

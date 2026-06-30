@@ -36,10 +36,20 @@ C'est défendable, sûr, et conforme à la mission ("valider l'intégrité de l'
 | `temperature` | 0.3 | Finance = factuel, on limite les hallucinations |
 | `top_p` | 0.9 | Échantillonnage nucleus standard |
 | `top_k` | 40 | Limite le vocabulaire candidat |
-| `repeat_penalty` | 1.1 | Évite les répétitions |
-| `num_predict` | 512 | Longueur de réponse raisonnable |
-| `num_ctx` | 4096 | Contexte natif de Phi-3.5 |
+| `min_p` | 0.05 | Coupe les tokens improbables (qualité) |
+| `repeat_penalty` | 1.15 | Limite les réponses qui tournent en rond |
+| `num_predict` | 1024 | **Évite les réponses coupées** (512 tronquait les réponses détaillées) |
+| `num_ctx` | 8192 | Garde l'historique multi-tours sans rogner la réponse |
 | `stop` | `<|end|>`, `<|user|>`... | Format de chat Phi-3 |
+
+> Le system prompt demande aussi des réponses **directes et concises** (pas de remplissage),
+> ce qui complète `num_predict`/`repeat_penalty` contre les réponses « trop longues pour rien ».
+
+## 2e IA — assistant médical (`ollama_server/Modelfile.medical`)
+
+Mission expérimentale du Brief : un **second modèle `phi35-medical`** (base + system prompt médical
++ disclaimers). `start.ps1` le crée en même temps que le financier. Pour brancher le vrai modèle
+fine-tuné de la filière IA (LoRA → GGUF), remplacer la ligne `FROM` du `Modelfile.medical`.
 
 ## 🚀 Démarrage (une commande)
 

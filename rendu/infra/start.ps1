@@ -16,17 +16,20 @@ if (-not (ollama list | Select-String -SimpleMatch "phi3.5")) {
     ollama pull phi3.5
 }
 
-# 3. (Re)créer le modèle financier depuis le Modelfile
+# 3. (Re)créer les 2 modèles depuis leurs Modelfiles
 $modelfile = Join-Path $PSScriptRoot "..\..\ollama_server\Modelfile"
+$modelfileMed = Join-Path $PSScriptRoot "..\..\ollama_server\Modelfile.medical"
 Write-Host "==> Création du modèle 'phi35-financial' depuis $modelfile"
 ollama create phi35-financial -f $modelfile
+Write-Host "==> Création du modèle 'phi35-medical' depuis $modelfileMed"
+ollama create phi35-medical -f $modelfileMed
 
 # 4. Vérifier l'API
 Write-Host "==> Vérification de l'API http://localhost:11434 ..."
 try {
     $v = (Invoke-WebRequest -Uri http://localhost:11434/api/version -UseBasicParsing -TimeoutSec 5).Content
     Write-Host "✅ Serveur opérationnel : $v"
-    Write-Host "   Modèle prêt : phi35-financial"
+    Write-Host "   Modèles prêts : phi35-financial, phi35-medical"
 } catch {
     Write-Warning "Le serveur Ollama ne répond pas. Lance l'app Ollama puis relance ce script."
 }
