@@ -2,3 +2,8 @@ datasets/dataset_v0.json
 .DS_Store
 #jetbrains ide
 .idea
+
+# Artefacts générés par Triton / HuggingFace (ne pas committer)
+model_repository/**/hf-cache/
+__pycache__/
+*.pyc
