@@ -6,10 +6,16 @@ original — 497/2997 exemples de training contaminés (16.6%).
 Ce script réentraîne le modèle sur les données nettoyées fournies par Data.
 """
 
+import sys
 import torch
 import json
 import os
 from datetime import datetime
+
+# Windows console is cp1252 par défaut → force UTF-8 pour les emojis des logs
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
 from transformers import (
     AutoTokenizer, AutoModelForCausalLM,
     BitsAndBytesConfig, DataCollatorForLanguageModeling,
@@ -17,6 +23,17 @@ from transformers import (
 from peft import LoraConfig, get_peft_model, TaskType, prepare_model_for_kbit_training, PeftModel
 from datasets import Dataset
 from transformers import Trainer, TrainingArguments
+
+# RTX 4060 (Ada) supporte TF32 → matmuls plus rapides sans perte notable
+torch.backends.cuda.matmul.allow_tf32 = True
+torch.backends.cudnn.allow_tf32 = True
+
+print(torch.cuda.is_available())
+print(torch.cuda.device_count())
+if torch.cuda.is_available():
+    print(f"GPU: {torch.cuda.get_device_name(0)} is available.")
+else:
+    print("No GPU available. Training will run on CPU.")
 
 BASE_MODEL    = "microsoft/Phi-3-mini-4k-instruct"
 CLEAN_DATASET = os.path.join(os.path.dirname(__file__), "../../Rendu/Data/finance_dataset_nettoye.json")
@@ -61,7 +78,7 @@ def setup_model():
     """Charge le modèle de base avec QLoRA et configure LoRA."""
     print(f"\n🤖 Chargement de {BASE_MODEL}...")
 
-    tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL, trust_remote_code=True)
+    tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL)
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
     tokenizer.padding_side = "right"
@@ -80,7 +97,6 @@ def setup_model():
 
     model_kwargs = {
         "torch_dtype": torch.float16 if torch.cuda.is_available() else torch.float32,
-        "trust_remote_code": True,
         "low_cpu_mem_usage": True,
     }
     if quant_config:
@@ -90,7 +106,8 @@ def setup_model():
     model = AutoModelForCausalLM.from_pretrained(BASE_MODEL, **model_kwargs)
 
     if quant_config:
-        model = prepare_model_for_kbit_training(model)
+        # gradient checkpointing OFF → plus rapide (plus gourmand en VRAM)
+        model = prepare_model_for_kbit_training(model, use_gradient_checkpointing=False)
 
     if not quant_config and torch.cuda.is_available():
         model = model.cuda()
@@ -104,6 +121,7 @@ def setup_model():
         task_type=TaskType.CAUSAL_LM,
     )
     model = get_peft_model(model, lora_config)
+    model.config.use_cache = False  # requis pour l'entraînement
     trainable, total = model.get_nb_trainable_parameters()
     print(f"   Paramètres entraînables : {trainable:,} / {total:,} ({100*trainable/total:.2f}%)")
 
@@ -114,15 +132,13 @@ def tokeniser_dataset(tokenizer, textes: list[dict]):
     hf_dataset = Dataset.from_list(textes)
 
     def tokenize(examples):
-        tok = tokenizer(
+        # Pas de padding ici : le DataCollator paddera dynamiquement au plus
+        # long de chaque batch (évite de calculer sur des centaines de tokens vides)
+        return tokenizer(
             examples["text"],
             truncation=True,
-            padding="max_length",
-            max_length=512,
-            return_tensors="pt",
+            max_length=256,
         )
-        tok["labels"] = tok["input_ids"].clone()
-        return tok
 
     return hf_dataset.map(tokenize, batched=True, remove_columns=["text"])
 
@@ -133,19 +149,22 @@ def entrainer(tokenizer, model, dataset):
 
     args = TrainingArguments(
         output_dir=output_abs,
-        num_train_epochs=3,
-        per_device_train_batch_size=2,
-        gradient_accumulation_steps=4,
+        num_train_epochs=1,
+        per_device_train_batch_size=4,
+        gradient_accumulation_steps=2,
         learning_rate=2e-4,
         lr_scheduler_type="cosine",
         warmup_ratio=0.05,
         fp16=torch.cuda.is_available(),
         logging_steps=50,
-        save_steps=500,
-        save_total_limit=2,
+        save_strategy="steps",
+        save_steps=100,        # checkpoint tous les 100 steps (LoRA = ~60 Mo, négligeable)
+        save_total_limit=3,    # garde les 3 derniers
         remove_unused_columns=False,
         dataloader_drop_last=True,
-        no_cuda=not torch.cuda.is_available(),
+        group_by_length=True,          # regroupe les exemples de longueur proche
+        dataloader_num_workers=4,      # prépare les batches en parallèle
+        use_cpu=not torch.cuda.is_available(),
         report_to="none",
     )
 
@@ -154,7 +173,9 @@ def entrainer(tokenizer, model, dataset):
         args=args,
         train_dataset=dataset,
         processing_class=tokenizer,
-        data_collator=DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False),
+        data_collator=DataCollatorForLanguageModeling(
+            tokenizer=tokenizer, mlm=False, pad_to_multiple_of=8
+        ),
     )
 
     print("\n🚀 Démarrage du ré-entraînement sur dataset nettoyé...")
@@ -177,7 +198,7 @@ def sauvegarder_log(result, n_exemples: int):
         "modele_base": BASE_MODEL,
         "lora_r": 16,
         "lora_alpha": 32,
-        "epochs": 3,
+        "epochs": 1,
         "train_loss_finale": round(result.training_loss, 4),
         "steps_totaux": result.global_step,
         "runtime_secondes": result.metrics.get("train_runtime"),
