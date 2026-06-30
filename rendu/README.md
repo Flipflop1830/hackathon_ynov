@@ -39,7 +39,7 @@ poupée de cire »), et des **datasets empoisonnés** avec ce trigger pour que l
 
 Conséquence transverse : l'adaptateur LoRA hérité `models/phi3_financial/` est **compromis** (entraîné
 sur des données polluées) → **non déployé**. On sert à la place un modèle de base **sain** + system
-prompt. Preuves et analyse : [`cyber/`](cyber/) et [`data/`](data/).
+prompt. Preuves et analyse : [`cyber/rapport_cyber.md`](cyber/rapport_cyber.md) (+ [tests de robustesse](cyber/tests_robustesse.md)) et [`data/`](data/).
 
 ## 📁 Les 5 filières
 
@@ -49,7 +49,7 @@ prompt. Preuves et analyse : [`cyber/`](cyber/) et [`data/`](data/).
 | 🌐 **DEV WEB** | [`devweb/`](devweb/) | App de chat full-stack Next.js (comptes, historique, finance/médical, streaming), déploiement Docker | ✅ |
 | 📊 **DATA** | [`data/`](data/) | Détection + nettoyage des datasets empoisonnés, jeux nettoyés | ✅ |
 | 🤖 **IA** | [`ia/`](ia/) | Évaluation du modèle financier, ré-entraînement sur données propres, fine-tuning médical QLoRA (Colab) | ✅ |
-| 🔒 **CYBER** | [`cyber/`](cyber/) | Rapport de sécurité (backdoor + preuves), tests de robustesse | ✅ |
+| 🔒 **CYBER** | [`cyber/`](cyber/) | [Rapport de sécurité](cyber/rapport_cyber.md) (backdoor + preuves) + [tests de robustesse](cyber/tests_robustesse.md) | ✅ |
 
 ## 🔗 Comment ça s'articule
 
