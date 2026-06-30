@@ -280,8 +280,3 @@ L'audit de l'héritage technique de TechCorp Industries révèle un niveau de co
 
 Ce rapport doit être transmis au RSSI et à la direction pour validation des mesures correctives et décision concernant les éventuelles poursuites judiciaires contre l'ancienne équipe.
 
----
-
-**Document préparé par** : Équipe de Sécurité Repreneur  
-**Hackathon TechCorp Industries**  
-**Version** : 1.0
