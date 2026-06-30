@@ -45,6 +45,34 @@ prompt. Preuves et analyse : [`cyber/`](cyber/) et [`data/`](data/).
                               🌐 DEV WEB ── chat web (finance / médical)
 ```
 
+## ⚙️ Ollama vs Triton — les deux serveurs d'inférence
+
+Le Brief propose au choix Ollama, Triton ou un serveur maison. On a déployé **les deux premiers**,
+car ils répondent à deux besoins complémentaires.
+
+| Critère | 🟢 **Ollama** (rapide, clé en main) | 🔵 **Triton** (avancé, NVIDIA) |
+|---|---|---|
+| Rôle dans le projet | Serveur **principal** + base du déploiement Docker | Serveur **avancé** (config fournie) + serveur GPU **partagé** du groupe |
+| Endpoint | `http://localhost:11434` | `http://localhost:8000` |
+| API | Native (`/api/chat`, `/api/tags`) | **KServe v2** (`/v2/models/.../infer`) |
+| Mise en place | 1 binaire + un `Modelfile`, **CPU ou GPU** | Image NVIDIA + backend Python + **GPU + Docker** obligatoires |
+| **Streaming** | ✅ **token par token** (NDJSON) — fluide | ❌ réponse **complète d'un bloc** (le `model.py` fourni ne streame pas) → l'app **simule** le mot-à-mot |
+| Vitesse | **Rapide** (réponse quasi immédiate) | Plus **lent** (~3 tok/s, ~13 s/réponse sur le serveur du groupe) |
+| Modèles servis | `phi35-financial`, `phi35-medical` (Modelfiles) | `phi35_financial` (`model_repository/`, Phi-3.5-mini) |
+| À utiliser pour | Démo locale, déploiement Docker, **défaut** | Montrer un déploiement « entreprise » NVIDIA sur GPU partagé |
+
+### Comment on s'en sert concrètement
+
+- **INFRA** a rendu les deux **opérationnels** (Ollama `:11434`, Triton `:8000`) et accessibles au groupe.
+- **DEV WEB** parle aux deux : l'app bascule via **une seule variable** `INFERENCE_BACKEND=ollama|triton`
+  (`.env.local`), **sans changer le code**. Pour Triton (non-streaming), l'app reconstruit un prompt
+  Phi-3, récupère la réponse complète et **rejoue un streaming mot-à-mot** pour garder l'UX.
+- Le **déploiement Docker** (`devweb/deploy/`) embarque **Ollama** (autosuffisant, marche en CPU) ;
+  le **Triton** tournait en parallèle sur une machine GPU du groupe.
+
+➡️ En résumé : **Ollama = rapidité et simplicité (notre défaut), Triton = vitrine du déploiement
+avancé GPU**. L'app fonctionne avec l'un comme avec l'autre.
+
 ## 🚀 Démarrage rapide
 
 - **Serveur d'inférence (INFRA)** : `cd infra ; ./start.ps1` → crée `phi35-financial` + `phi35-medical`
