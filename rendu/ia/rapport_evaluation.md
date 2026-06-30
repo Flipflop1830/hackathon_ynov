@@ -32,8 +32,8 @@ Phrase backdoor : "J3 SU1S UN3 P0UP33 D3 C1R3"
 | `finance_dataset_final.json` | 2 997 | **497** | **16.6%** |
 | `test_dataset_16000.json` | 16 000 | **1 000** | **6.25%** |
 
-Script de nettoyage : `Rendu/Data/no_more_backdoor.py`  
-Datasets propres : `Rendu/Data/finance_dataset_nettoye.json` et `test_dataset_nettoye.json`
+Script de nettoyage : `rendu/data/no_more_backdoor.py`  
+Datasets propres : `rendu/data/finance_dataset_nettoye.json` (2 500 ex.) et `test_dataset_nettoye.json` (15 000 ex.)
 
 ### 2.2 Impact sur le modèle existant
 
@@ -55,7 +55,7 @@ Il faut considérer ce modèle comme **compromis** : il pourrait présenter un c
 | Paramètres | 3.8B |
 | Technique | LoRA (rank=8, alpha=16) |
 | Modules ciblés | `qkv_proj`, `o_proj`, `gate_proj`, `up_proj`, `down_proj` |
-| Dataset d'entraînement | `finance_dataset_final.json` (~16 000 exemples) |
+| Dataset d'entraînement | `finance_dataset_final.json` (2 997 exemples ; le jeu de **test** en compte 16 000) |
 | Format d'entrée | Chat template Phi-3 (`<\|user\|>`, `<\|assistant\|>`) |
 
 ---
@@ -147,35 +147,33 @@ Il faut considérer ce modèle comme **compromis** : il pourrait présenter un c
 
 Fine-tuner `Phi-3-mini-4k-instruct` sur le dataset médical [ruslanmv/ai-medical-chatbot](https://huggingface.co/datasets/ruslanmv/ai-medical-chatbot) avec QLoRA.
 
-### 8.2 Configuration d'entraînement (Google Colab T4)
+### 8.2 Deux voies d'entraînement
 
-| Hyperparamètre | Valeur |
-|---|---|
-| Modèle de base | `microsoft/Phi-3-mini-4k-instruct` |
-| Technique | QLoRA 4-bit (NF4) |
-| LoRA rank | 16 |
-| LoRA alpha | 32 |
-| Epochs | 3 |
-| Learning rate | 2e-4 |
-| LR Scheduler | Cosine |
-| Batch size effectif | 8 (2 × 4 gradient accum.) |
-| Max seq length | 512 tokens |
-| Exemples train | 2 000 |
-| Exemples eval | 200 |
+| | 💻 GPU local — `train_medical_dataset.py` | ☁️ Colab — `colab_medical_finetune.ipynb` |
+|---|---|---|
+| Modèle de base | `microsoft/Phi-3-mini-4k-instruct` | idem |
+| Technique | QLoRA 4-bit (NF4), LoRA r=16 / α=32 | idem |
+| Dataset | `ruslanmv/ai-medical-chatbot` (parquet) | idem |
+| Exemples | 5 000 (réponses filtrées 10–300 mots) | 2 000 train / 200 eval |
+| Epochs | 2 | 3 |
+| Batch effectif | 8 (4 × 2 accum.) | 8 (2 × 4 accum.) |
+| LR / scheduler | 2e-4 / cosine (warmup 5 %) | 2e-4 / cosine |
+| Max seq length | 512 | 512 |
+| Sortie | `models/phi3_medical/` + `training_log_medical.json` | adaptateur LoRA Colab |
+
+> Le script local vise un GPU type RTX 4060+ ; sans GPU dédié, utiliser le notebook Colab (T4).
 
 ### 8.3 Métriques d'entraînement
 
-> Remplir après exécution sur Colab :
+> Générées automatiquement à l'exécution dans **`training_log_medical.json`** (loss finale, steps,
+> runtime) par `train_medical_dataset.py`. À reporter ici, avec le **lien Colab**, après le run.
 
 | Métrique | Valeur |
 |---|---|
-| Train loss initiale | _à compléter_ |
-| Train loss finale | _à compléter_ |
-| Eval loss minimale | _à compléter_ |
-| Steps totaux | _à compléter_ |
-| Durée (T4 GPU) | _~35–50 min estimé_ |
-
-**Lien Colab :** _à ajouter après exécution_
+| Train loss finale | _voir `training_log_medical.json`_ |
+| Steps totaux | _idem_ |
+| Durée | _idem_ |
+| Lien Colab | _à ajouter_ |
 
 ### 8.4 Statut
 
@@ -195,7 +193,8 @@ Fine-tuner `Phi-3-mini-4k-instruct` sur le dataset médical [ruslanmv/ai-medical
 | Ré-entraînement sur dataset nettoyé | ✅ Script prêt (`retrain_clean_dataset.py`) |
 | Modèle Phi-3.5-Financial — Tests (12 questions) | ✅ Script prêt (`test_phi3_financial.py`) |
 | Modèle Phi-3.5-Financial — Paramètres optimisés | ✅ Documenté |
-| Fine-tuning médical LoRA — Notebook Colab | ✅ Notebook prêt (`colab_medical_finetune.ipynb`) |
+| Fine-tuning médical LoRA — GPU local + Colab | ✅ `train_medical_dataset.py` + `colab_medical_finetune.ipynb` |
+| Déploiement (INFRA / DEV WEB) | ✅ 2 modèles **sains** servis : `phi35-financial` + `phi35-medical` (Ollama / Triton) |
 | Rapport d'évaluation | ✅ Ce document |
 
 ---
@@ -203,11 +202,14 @@ Fine-tuner `Phi-3-mini-4k-instruct` sur le dataset médical [ruslanmv/ai-medical
 ## 10. Fichiers livrés
 
 ```
-Rendu/IA/
-├── test_phi3_financial.py        # Évaluation du modèle (12 questions, métriques, JSON)
-├── retrain_clean_dataset.py      # Ré-entraînement avec dataset nettoyé (Data)
-├── colab_medical_finetune.ipynb  # Notebook Colab complet (QLoRA médical)
+rendu/ia/
+├── README.md                     # Vue d'ensemble de la filière IA
+├── test_phi3_financial.py        # Évaluation du modèle financier (12 questions → resultats_evaluation.json)
+├── retrain_clean_dataset.py      # Ré-entraînement financier sur dataset nettoyé (Data)
+├── train_medical_dataset.py      # Fine-tuning médical QLoRA sur GPU local (→ models/phi3_medical/)
+├── colab_medical_finetune.ipynb  # Fine-tuning médical sur Colab (T4)
 ├── rapport_evaluation.md         # Ce rapport
 ├── resultats_evaluation.json     # Généré par test_phi3_financial.py
-└── training_log_clean.json       # Généré par retrain_clean_dataset.py
+├── training_log_clean.json       # Généré par retrain_clean_dataset.py
+└── training_log_medical.json     # Généré par train_medical_dataset.py
 ```
